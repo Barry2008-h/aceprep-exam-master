@@ -2,15 +2,15 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { BookOpen, Clock, Target, Key, TrendingUp, LogOut, User } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { GraduationCap, BookOpen, Target, TrendingUp, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, profile, signOut, loading, isActivated } = useAuth();
+  const { user, profile, loading, signOut, isActivated } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -18,28 +18,13 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
     toast({
-      title: "Logged out successfully",
-      description: "See you soon!",
+      title: "Signed out successfully",
+      description: "See you next time!",
     });
-  };
-
-  const handleFeatureAccess = (feature: string, path: string) => {
-    if (feature === 'courses') {
-      // Courses are accessible but may show ads for non-activated users
-      navigate(path);
-    } else if (!isActivated) {
-      toast({
-        title: "Activation Required",
-        description: "Please activate your app to access this feature",
-        variant: "destructive",
-      });
-    } else {
-      navigate(path);
-    }
+    navigate('/auth');
   };
 
   if (loading) {
@@ -53,149 +38,133 @@ const Index = () => {
     );
   }
 
-  if (!user || !profile) return null;
+  if (!user) {
+    return null;
+  }
 
-  const features = [
-    {
-      title: "Past Questions",
-      icon: BookOpen,
-      description: "Practice with previous exam questions",
-      path: "/past-questions",
-      color: "from-blue-500 to-blue-600",
-      restricted: true
-    },
-    {
-      title: "Courses",
-      icon: Clock,
-      description: "Study comprehensive course materials",
-      path: "/courses",
-      color: "from-green-500 to-green-600",
-      restricted: false
-    },
-    {
-      title: "Exam Mode",
-      icon: Target,
-      description: "Take timed practice exams",
-      path: "/exam-mode",
-      color: "from-purple-500 to-purple-600",
-      restricted: true
-    },
-    {
-      title: "Past Scores",
-      icon: TrendingUp,
-      description: "View your performance history",
-      path: "/past-scores",
-      color: "from-orange-500 to-orange-600",
-      restricted: true
-    }
-  ];
+  if (!isActivated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <GraduationCap className="w-16 h-16 mx-auto text-blue-600 mb-4" />
+            <CardTitle>Account Activation Required</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-gray-600">
+              Your account needs to be activated before you can access the study materials.
+            </p>
+            <div className="space-y-2">
+              <Button onClick={() => navigate('/activate')} className="w-full">
+                Activate Account
+              </Button>
+              <Button variant="outline" onClick={handleSignOut} className="w-full">
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 shadow-lg">
-        <div className="flex justify-between items-center max-w-4xl mx-auto">
-          <div>
-            <h1 className="text-2xl font-bold">Aceprep</h1>
-            <p className="text-blue-100">Welcome, {profile.full_name}</p>
-          </div>
+      <div className="max-w-6xl mx-auto p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8 bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center gap-4">
-            {profile.username === 'adminbarry' && (
-              <Button 
-                variant="outline" 
-                className="text-blue-600 border-white hover:bg-white"
-                onClick={() => navigate('/admin')}
-              >
-                <User className="w-4 h-4 mr-2" />
-                Admin
-              </Button>
-            )}
-            <Button 
-              variant="outline" 
-              className="text-blue-600 border-white hover:bg-white"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-full">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Aceprep</h1>
+              <p className="text-gray-600">Welcome back, {profile?.full_name}!</p>
+            </div>
           </div>
+          <Button variant="outline" onClick={handleSignOut}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto p-6">
-        {/* Activation Status */}
-        {!isActivated && (
-          <Card className="mb-6 border-amber-200 bg-amber-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Key className="w-5 h-5 text-amber-600" />
-                  <div>
-                    <p className="font-medium text-amber-800">App Not Activated</p>
-                    <p className="text-sm text-amber-600">Activate to unlock all features and remove ads</p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={() => navigate('/activate')}
-                  className="bg-amber-600 hover:bg-amber-700"
-                >
-                  Activate Now
-                </Button>
-              </div>
+        {/* Main Content */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/courses')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-blue-600" />
+                Study Courses
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Access comprehensive study materials and practice questions for your exams.</p>
             </CardContent>
           </Card>
-        )}
 
-        {/* Feature Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {features.map((feature, index) => (
-            <Card 
-              key={index}
-              className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105"
-              onClick={() => handleFeatureAccess(feature.title.toLowerCase().replace(' ', '-'), feature.path)}
-            >
-              <CardContent className="p-6">
-                <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <feature.icon className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2 text-gray-800">{feature.title}</h3>
-                <p className="text-gray-600 mb-4">{feature.description}</p>
-                {feature.restricted && !isActivated && (
-                  <div className="flex items-center gap-2 text-amber-600">
-                    <Key className="w-4 h-4" />
-                    <span className="text-sm">Requires activation</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/past-questions')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-green-600" />
+                Past Questions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Practice with real past questions from DELSU, JAMB, WAEC and other exams.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/exam-mode')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-red-600" />
+                Exam Mode
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Take timed practice exams to simulate real exam conditions.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/past-scores')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-purple-600" />
+                Performance Tracking
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">View your past scores and track your progress over time.</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Stats */}
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="mt-8">
           <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">150+</div>
-              <div className="text-sm text-gray-600">Past Questions</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">25+</div>
-              <div className="text-sm text-gray-600">Courses</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">500+</div>
-              <div className="text-sm text-gray-600">Students</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-orange-600">95%</div>
-              <div className="text-sm text-gray-600">Success Rate</div>
+            <CardHeader>
+              <CardTitle>Quick Stats</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">-</div>
+                  <div className="text-sm text-gray-600">Tests Taken</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">-</div>
+                  <div className="text-sm text-gray-600">Avg Score</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-purple-600">-</div>
+                  <div className="text-sm text-gray-600">Study Hours</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-orange-600">-</div>
+                  <div className="text-sm text-gray-600">Rank</div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

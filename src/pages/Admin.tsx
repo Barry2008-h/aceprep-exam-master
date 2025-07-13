@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Users, Key, BookOpen, Target, Plus } from 'lucide-react';
+import { ArrowLeft, Users, Key, BookOpen, Target, Plus, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,6 +22,11 @@ const Admin = () => {
   useEffect(() => {
     if (!loading) {
       if (!profile || profile.username !== 'adminbarry') {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access the admin panel",
+          variant: "destructive",
+        });
         navigate('/');
         return;
       }
@@ -95,6 +100,29 @@ const Admin = () => {
     );
   }
 
+  // Show access denied if not admin
+  if (!profile || profile.username !== 'adminbarry') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <Shield className="w-16 h-16 mx-auto text-red-600 mb-4" />
+            <CardTitle className="text-red-600">Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-gray-600">
+              You don't have permission to access the admin panel.
+            </p>
+            <Button onClick={() => navigate('/')} className="w-full">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-6xl mx-auto">
@@ -103,7 +131,10 @@ const Admin = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
-          <h1 className="text-3xl font-bold text-gray-800">Admin Panel</h1>
+          <div className="flex items-center gap-2">
+            <Shield className="w-6 h-6 text-red-600" />
+            <h1 className="text-3xl font-bold text-gray-800">Admin Panel</h1>
+          </div>
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
@@ -212,8 +243,8 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 mb-4">Manage courses, chapters, and practice questions</p>
-                  <Button onClick={() => navigate('/admin/courses')}>
-                    Manage Courses
+                  <Button disabled>
+                    Manage Courses (Coming Soon)
                   </Button>
                 </CardContent>
               </Card>
@@ -227,8 +258,8 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 mb-4">Manage past questions by category and year</p>
-                  <Button onClick={() => navigate('/admin/questions')}>
-                    Manage Questions
+                  <Button disabled>
+                    Manage Questions (Coming Soon)
                   </Button>
                 </CardContent>
               </Card>
