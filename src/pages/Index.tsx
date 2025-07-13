@@ -1,32 +1,25 @@
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { BookOpen, Clock, Target, Key, TrendingUp, LogOut, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState(null);
-  const [isActivated, setIsActivated] = useState(false);
+  const { user, profile, signOut, loading, isActivated } = useAuth();
 
   useEffect(() => {
-    const currentUser = localStorage.getItem('currentUser');
-    const userActivated = localStorage.getItem('userActivated') === 'true';
-    
-    if (currentUser) {
-      setUser(JSON.parse(currentUser));
-      setIsActivated(userActivated);
-    } else {
+    if (!loading && !user) {
       navigate('/auth');
     }
-  }, [navigate]);
+  }, [user, loading, navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('userActivated');
+  const handleLogout = async () => {
+    await signOut();
     navigate('/auth');
     toast({
       title: "Logged out successfully",
@@ -34,9 +27,9 @@ const Index = () => {
     });
   };
 
-  const handleFeatureAccess = (feature, path) => {
-    if (feature === 'course') {
-      // Course is accessible but may show ads for non-activated users
+  const handleFeatureAccess = (feature: string, path: string) => {
+    if (feature === 'courses') {
+      // Courses are accessible but may show ads for non-activated users
       navigate(path);
     } else if (!isActivated) {
       toast({
@@ -49,7 +42,18 @@ const Index = () => {
     }
   };
 
-  if (!user) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !profile) return null;
 
   const features = [
     {
@@ -93,10 +97,10 @@ const Index = () => {
         <div className="flex justify-between items-center max-w-4xl mx-auto">
           <div>
             <h1 className="text-2xl font-bold">Aceprep</h1>
-            <p className="text-blue-100">Welcome, {user.fullName}</p>
+            <p className="text-blue-100">Welcome, {profile.full_name}</p>
           </div>
           <div className="flex items-center gap-4">
-            {user.username === 'adminbarry' && (
+            {profile.username === 'adminbarry' && (
               <Button 
                 variant="outline" 
                 className="text-blue-600 border-white hover:bg-white"

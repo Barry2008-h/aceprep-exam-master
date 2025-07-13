@@ -7,43 +7,78 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Key, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const Activate = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, profile } = useAuth();
   const [activationKey, setActivationKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleActivation = async (e) => {
+  const handleActivation = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+    
     setIsLoading(true);
 
-    // Get valid activation keys from localStorage
-    const validKeys = JSON.parse(localStorage.getItem('activationKeys') || '[]');
-    const usedKeys = JSON.parse(localStorage.getItem('usedKeys') || '[]');
+    try {
+      // Check if key exists and is unused
+      const { data: keyData, error: keyError } = await supabase
+        .from('activation_keys')
+        .select('*')
+        .eq('key_code', activationKey)
+        .eq('is_used', false)
+        .single();
 
-    if (validKeys.includes(activationKey) && !usedKeys.includes(activationKey)) {
+      if (keyError || !keyData) {
+        toast({
+          title: "Invalid activation key",
+          description: "Please check your key and try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       // Mark key as used
-      usedKeys.push(activationKey);
-      localStorage.setItem('usedKeys', JSON.stringify(usedKeys));
-      localStorage.setItem('userActivated', 'true');
-      
+      const { error: updateKeyError } = await supabase
+        .from('activation_keys')
+        .update({ 
+          is_used: true, 
+          used_by: user.id, 
+          used_at: new Date().toISOString() 
+        })
+        .eq('id', keyData.id);
+
+      if (updateKeyError) {
+        throw updateKeyError;
+      }
+
+      // Update user profile
+      const { error: updateProfileError } = await supabase
+        .from('profiles')
+        .update({ 
+          is_activated: true, 
+          activation_key: activationKey 
+        })
+        .eq('id', user.id);
+
+      if (updateProfileError) {
+        throw updateProfileError;
+      }
+
       toast({
         title: "Activation successful!",
         description: "All features are now unlocked and ads have been removed.",
       });
       
       navigate('/');
-    } else if (usedKeys.includes(activationKey)) {
+    } catch (error: any) {
       toast({
-        title: "Key already used",
-        description: "This activation key has already been used.",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Invalid activation key",
-        description: "Please check your key and try again.",
+        title: "Activation failed",
+        description: error.message,
         variant: "destructive",
       });
     }

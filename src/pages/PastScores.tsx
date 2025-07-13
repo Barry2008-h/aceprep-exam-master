@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, TrendingUp, Clock, Target, BookOpen } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const PastScores = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [scores, setScores] = useState([]);
   const [stats, setStats] = useState({
     totalQuizzes: 0,
@@ -17,32 +20,51 @@ const PastScores = () => {
   });
 
   useEffect(() => {
-    const userScores = JSON.parse(localStorage.getItem('userScores') || '[]');
-    setScores(userScores.reverse()); // Show latest first
-
-    // Calculate stats
-    if (userScores.length > 0) {
-      const totalScore = userScores.reduce((sum, score) => sum + score.percentage, 0);
-      const bestScore = Math.max(...userScores.map(score => score.percentage));
-      const totalTime = userScores.reduce((sum, score) => sum + (score.timeSpent || 0), 0);
-
-      setStats({
-        totalQuizzes: userScores.length,
-        averageScore: Math.round(totalScore / userScores.length),
-        bestScore: bestScore,
-        totalTimeSpent: Math.round(totalTime / 60) // Convert to minutes
-      });
+    if (user) {
+      loadScores();
     }
-  }, []);
+  }, [user]);
 
-  const getScoreColor = (percentage) => {
+  const loadScores = async () => {
+    if (!user) return;
+
+    const { data: scoresData } = await supabase
+      .from('user_scores')
+      .select(`
+        *,
+        question_categories(name),
+        courses(title)
+      `)
+      .eq('user_id', user.id)
+      .order('completed_at', { ascending: false });
+
+    if (scoresData) {
+      setScores(scoresData);
+
+      // Calculate stats
+      if (scoresData.length > 0) {
+        const totalScore = scoresData.reduce((sum, score) => sum + score.percentage, 0);
+        const bestScore = Math.max(...scoresData.map(score => score.percentage));
+        const totalTime = scoresData.reduce((sum, score) => sum + (score.time_spent || 0), 0);
+
+        setStats({
+          totalQuizzes: scoresData.length,
+          averageScore: Math.round(totalScore / scoresData.length),
+          bestScore: bestScore,
+          totalTimeSpent: Math.round(totalTime / 60) // Convert to minutes
+        });
+      }
+    }
+  };
+
+  const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-600 bg-green-100';
     if (percentage >= 60) return 'text-blue-600 bg-blue-100';
     if (percentage >= 40) return 'text-yellow-600 bg-yellow-100';
     return 'text-red-600 bg-red-100';
   };
 
-  const getScoreIcon = (type) => {
+  const getScoreIcon = (type: string) => {
     switch (type) {
       case 'exam': return Target;
       case 'practice': return BookOpen;
@@ -111,8 +133,10 @@ const PastScores = () => {
               </CardContent>
             </Card>
           ) : (
-            scores.map((score, index) => {
-              const ScoreIcon = getScoreIcon(score.type);
+            scores.map((score: any, index) => {
+              const ScoreIcon = getScoreIcon(score.quiz_type);
+              const title = score.question_categories?.name || score.courses?.title || 'Quiz';
+              
               return (
                 <Card key={index} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
@@ -122,22 +146,22 @@ const PastScores = () => {
                           <ScoreIcon className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                          <h3 className="font-semibold">{score.title}</h3>
+                          <h3 className="font-semibold">{title}</h3>
                           <p className="text-sm text-gray-600">
-                            {score.questionsCorrect}/{score.totalQuestions} correct
+                            {score.score}/{score.total_questions} correct
                           </p>
                           <p className="text-xs text-gray-500">
-                            {new Date(score.date).toLocaleDateString()} at {new Date(score.date).toLocaleTimeString()}
+                            {new Date(score.completed_at).toLocaleDateString()} at {new Date(score.completed_at).toLocaleTimeString()}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
                         <Badge className={`text-lg font-bold ${getScoreColor(score.percentage)}`}>
-                          {score.percentage}%
+                          {Math.round(score.percentage)}%
                         </Badge>
-                        {score.timeSpent && (
+                        {score.time_spent && (
                           <p className="text-sm text-gray-500 mt-1">
-                            {Math.round(score.timeSpent / 60)}m {score.timeSpent % 60}s
+                            {Math.round(score.time_spent / 60)}m {score.time_spent % 60}s
                           </p>
                         )}
                       </div>

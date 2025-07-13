@@ -8,116 +8,92 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Users, Key, BookOpen, Target, Plus } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile, loading } = useAuth();
   const [users, setUsers] = useState([]);
   const [activationKeys, setActivationKeys] = useState([]);
   const [newKeyCount, setNewKeyCount] = useState(1);
 
   useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    if (currentUser.username !== 'adminbarry') {
-      navigate('/');
-      return;
+    if (!loading) {
+      if (!profile || profile.username !== 'adminbarry') {
+        navigate('/');
+        return;
+      }
+      loadData();
     }
+  }, [profile, loading, navigate]);
 
-    // Load data
-    setUsers(JSON.parse(localStorage.getItem('users') || '[]'));
-    setActivationKeys(JSON.parse(localStorage.getItem('activationKeys') || '[]'));
-  }, [navigate]);
+  const loadData = async () => {
+    // Load users
+    const { data: usersData } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (usersData) setUsers(usersData);
 
-  const generateActivationKeys = () => {
+    // Load activation keys
+    const { data: keysData } = await supabase
+      .from('activation_keys')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (keysData) setActivationKeys(keysData);
+  };
+
+  const generateActivationKeys = async () => {
     const newKeys = [];
     for (let i = 0; i < newKeyCount; i++) {
       const key = 'ACEPREP-' + Math.random().toString(36).substr(2, 8).toUpperCase();
-      newKeys.push(key);
+      newKeys.push({
+        key_code: key,
+        created_by: profile?.id
+      });
     }
     
-    const updatedKeys = [...activationKeys, ...newKeys];
-    setActivationKeys(updatedKeys);
-    localStorage.setItem('activationKeys', JSON.stringify(updatedKeys));
-    
-    toast({
-      title: "Keys generated successfully",
-      description: `Generated ${newKeyCount} new activation key(s)`,
-    });
+    const { error } = await supabase
+      .from('activation_keys')
+      .insert(newKeys);
+
+    if (error) {
+      toast({
+        title: "Error generating keys",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Keys generated successfully",
+        description: `Generated ${newKeyCount} new activation key(s)`,
+      });
+      loadData();
+    }
   };
 
-  const initializeSampleData = () => {
-    // Sample courses
-    const sampleCourses = [
-      {
-        id: 1,
-        title: "English Language",
-        description: "Comprehensive English language preparation",
-        chapters: [
-          {
-            id: 1,
-            title: "Grammar Basics",
-            content: "Understanding parts of speech, sentence structure, and basic grammar rules essential for Post-UTME success.",
-            questions: [
-              {
-                id: 1,
-                question: "Which of the following is a noun?",
-                options: ["Run", "Beautiful", "Book", "Quickly"],
-                correct: 2,
-                explanation: "A noun is a word that names a person, place, thing, or idea. 'Book' is a thing."
-              }
-            ]
-          }
-        ]
-      },
-      {
-        id: 2,
-        title: "Mathematics",
-        description: "Mathematical concepts and problem-solving",
-        chapters: [
-          {
-            id: 1,
-            title: "Algebra",
-            content: "Basic algebraic operations, equations, and inequalities for exam preparation.",
-            questions: [
-              {
-                id: 1,
-                question: "Solve for x: 2x + 5 = 15",
-                options: ["5", "10", "7.5", "2.5"],
-                correct: 0,
-                explanation: "2x + 5 = 15, so 2x = 10, therefore x = 5"
-              }
-            ]
-          }
-        ]
-      }
-    ];
-
-    // Sample past questions
-    const samplePastQuestions = [
-      {
-        id: 1,
-        category: "DELSU Post-UTME",
-        year: "2023",
-        duration: 30,
-        questions: [
-          {
-            id: 1,
-            question: "The capital of Nigeria is?",
-            options: ["Lagos", "Abuja", "Port Harcourt", "Kano"],
-            correct: 1
-          }
-        ]
-      }
-    ];
-
-    localStorage.setItem('courses', JSON.stringify(sampleCourses));
-    localStorage.setItem('pastQuestions', JSON.stringify(samplePastQuestions));
-    
+  const initializeSampleData = async () => {
+    // This will use the sample data already inserted via the migration
     toast({
       title: "Sample data initialized",
-      description: "Added sample courses and questions",
+      description: "Sample subjects and question categories are ready",
     });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -143,7 +119,7 @@ const Admin = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="w-5 h-5" />
-                  User Management
+                  User Management ({users.length} users)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -151,12 +127,12 @@ const Admin = () => {
                   {users.length === 0 ? (
                     <p className="text-gray-500">No users registered yet</p>
                   ) : (
-                    users.map(user => (
+                    users.map((user: any) => (
                       <div key={user.id} className="border rounded-lg p-4">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
                             <Label className="text-sm font-medium">Full Name</Label>
-                            <p className="text-sm">{user.fullName}</p>
+                            <p className="text-sm">{user.full_name}</p>
                           </div>
                           <div>
                             <Label className="text-sm font-medium">Username</Label>
@@ -167,8 +143,10 @@ const Admin = () => {
                             <p className="text-sm">{user.email}</p>
                           </div>
                           <div>
-                            <Label className="text-sm font-medium">Phone</Label>
-                            <p className="text-sm">{user.phone}</p>
+                            <Label className="text-sm font-medium">Status</Label>
+                            <p className={`text-sm ${user.is_activated ? 'text-green-600' : 'text-gray-600'}`}>
+                              {user.is_activated ? 'Activated' : 'Not Activated'}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -184,7 +162,7 @@ const Admin = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Key className="w-5 h-5" />
-                  Activation Keys
+                  Activation Keys ({activationKeys.length} total)
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -204,15 +182,15 @@ const Admin = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="font-medium">Generated Keys ({activationKeys.length})</Label>
+                  <Label className="font-medium">Generated Keys</Label>
                   <div className="max-h-64 overflow-y-auto border rounded-lg p-4">
                     {activationKeys.length === 0 ? (
                       <p className="text-gray-500">No activation keys generated yet</p>
                     ) : (
                       <div className="grid gap-2">
-                        {activationKeys.map((key, index) => (
-                          <div key={index} className="font-mono text-sm bg-gray-100 p-2 rounded">
-                            {key}
+                        {activationKeys.map((key: any) => (
+                          <div key={key.id} className={`font-mono text-sm p-2 rounded ${key.is_used ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-800'}`}>
+                            {key.key_code} {key.is_used && '(Used)'}
                           </div>
                         ))}
                       </div>
@@ -264,9 +242,9 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <p className="text-gray-600">Initialize the app with sample data for testing</p>
+                  <p className="text-gray-600">Sample data has been initialized with subjects and question categories</p>
                   <Button onClick={initializeSampleData}>
-                    Initialize Sample Data
+                    Refresh Sample Data
                   </Button>
                 </div>
               </CardContent>

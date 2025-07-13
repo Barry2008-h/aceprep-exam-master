@@ -8,14 +8,17 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { GraduationCap } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp, signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const [loginData, setLoginData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
 
@@ -27,88 +30,74 @@ const Auth = () => {
     password: ''
   });
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Get users from localStorage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    
     // Check for admin login
-    if (loginData.username === 'adminbarry' && loginData.password === '2bego008') {
-      const adminUser = {
-        fullName: 'Admin Barry',
-        username: 'adminbarry',
+    if (loginData.email === 'admin@aceprep.com' && loginData.password === '2bego008') {
+      // Create admin account if it doesn't exist
+      const { error: signUpError } = await supabase.auth.signUp({
         email: 'admin@aceprep.com',
-        phone: '',
-        isAdmin: true
-      };
-      localStorage.setItem('currentUser', JSON.stringify(adminUser));
-      localStorage.setItem('userActivated', 'true');
-      navigate('/');
-      toast({
-        title: "Admin login successful",
-        description: "Welcome to Aceprep Admin Panel",
+        password: '2bego008',
+        options: {
+          data: {
+            full_name: 'Admin Barry',
+            username: 'adminbarry',
+            phone: ''
+          }
+        }
       });
-      setIsLoading(false);
-      return;
+
+      if (!signUpError) {
+        toast({
+          title: "Admin account created",
+          description: "Please check your email to verify your account",
+        });
+      }
     }
 
-    // Check regular user login
-    const user = users.find(u => u.username === loginData.username && u.password === loginData.password);
+    const { error } = await signIn(loginData.email, loginData.password);
     
-    if (user) {
-      localStorage.setItem('currentUser', JSON.stringify(user));
+    if (error) {
+      toast({
+        title: "Invalid login credentials",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
       navigate('/');
       toast({
         title: "Login successful",
-        description: `Welcome back, ${user.fullName}!`,
-      });
-    } else {
-      toast({
-        title: "Invalid login credentials",
-        description: "Please check your username and password",
-        variant: "destructive",
+        description: "Welcome back!",
       });
     }
     
     setIsLoading(false);
   };
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Get existing users
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const { error } = await signUp(registerData.email, registerData.password, {
+      full_name: registerData.fullName,
+      username: registerData.username,
+      phone: registerData.phone
+    });
     
-    // Check if username already exists
-    if (users.some(u => u.username === registerData.username)) {
+    if (error) {
       toast({
-        title: "Username already exists",
-        description: "Please choose a different username",
+        title: "Registration failed",
+        description: error.message,
         variant: "destructive",
       });
-      setIsLoading(false);
-      return;
+    } else {
+      toast({
+        title: "Registration successful",
+        description: "Please check your email to verify your account",
+      });
     }
-
-    // Add new user
-    const newUser = {
-      ...registerData,
-      id: Date.now(),
-      createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-    
-    navigate('/');
-    toast({
-      title: "Registration successful",
-      description: `Welcome to Aceprep, ${newUser.fullName}!`,
-    });
     
     setIsLoading(false);
   };
@@ -139,12 +128,12 @@ const Auth = () => {
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div>
-                    <Label htmlFor="login-username">Username</Label>
+                    <Label htmlFor="login-email">Email</Label>
                     <Input
-                      id="login-username"
-                      type="text"
-                      value={loginData.username}
-                      onChange={(e) => setLoginData({...loginData, username: e.target.value})}
+                      id="login-email"
+                      type="email"
+                      value={loginData.email}
+                      onChange={(e) => setLoginData({...loginData, email: e.target.value})}
                       required
                     />
                   </div>
@@ -161,6 +150,9 @@ const Auth = () => {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Logging in...' : 'Login'}
                   </Button>
+                  <div className="text-sm text-center text-gray-600">
+                    Admin Login: admin@aceprep.com / 2bego008
+                  </div>
                 </form>
               </TabsContent>
               
