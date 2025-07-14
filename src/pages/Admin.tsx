@@ -243,8 +243,8 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 mb-4">Manage courses, chapters, and practice questions</p>
-                  <Button disabled>
-                    Manage Courses (Coming Soon)
+                  <Button onClick={() => navigate('/course-management')}>
+                    Manage Courses & Questions
                   </Button>
                 </CardContent>
               </Card>
@@ -258,8 +258,8 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 mb-4">Manage past questions by category and year</p>
-                  <Button disabled>
-                    Manage Questions (Coming Soon)
+                  <Button onClick={() => navigate('/course-management')}>
+                    Manage Questions
                   </Button>
                 </CardContent>
               </Card>

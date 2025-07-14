@@ -9,6 +9,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Activate from "./pages/Activate";
 import Admin from "./pages/Admin";
+import CourseManagement from "./pages/CourseManagement";
+import Profile from "./pages/Profile";
 import Courses from "./pages/Courses";
 import PastQuestions from "./pages/PastQuestions";
 import ExamMode from "./pages/ExamMode";
@@ -29,6 +31,8 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/activate" element={<Activate />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/course-management" element={<CourseManagement />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/past-questions" element={<PastQuestions />} />
             <Route path="/exam-mode" element={<ExamMode />} />

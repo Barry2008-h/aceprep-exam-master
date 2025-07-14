@@ -44,6 +44,41 @@ export type Database = {
         }
         Relationships: []
       }
+      chapters: {
+        Row: {
+          chapter_number: number
+          course_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          chapter_number: number
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          chapter_number?: number
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapters_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           chapter_number: number | null
@@ -154,10 +189,12 @@ export type Database = {
       questions: {
         Row: {
           category_id: string | null
+          chapter_id: string | null
           correct_answer: string | null
           course_id: string | null
           created_at: string | null
           difficulty_level: string | null
+          exam_mode_enabled: boolean | null
           explanation: string | null
           id: string
           option_a: string
@@ -168,10 +205,12 @@ export type Database = {
         }
         Insert: {
           category_id?: string | null
+          chapter_id?: string | null
           correct_answer?: string | null
           course_id?: string | null
           created_at?: string | null
           difficulty_level?: string | null
+          exam_mode_enabled?: boolean | null
           explanation?: string | null
           id?: string
           option_a: string
@@ -182,10 +221,12 @@ export type Database = {
         }
         Update: {
           category_id?: string | null
+          chapter_id?: string | null
           correct_answer?: string | null
           course_id?: string | null
           created_at?: string | null
           difficulty_level?: string | null
+          exam_mode_enabled?: boolean | null
           explanation?: string | null
           id?: string
           option_a?: string
@@ -200,6 +241,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "question_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
             referencedColumns: ["id"]
           },
           {

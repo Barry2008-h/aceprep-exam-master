@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { GraduationCap, BookOpen, Target, TrendingUp, LogOut } from 'lucide-react';
+import { GraduationCap, BookOpen, Target, TrendingUp, LogOut, User, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
@@ -58,6 +58,18 @@ const Index = () => {
               <Button onClick={() => navigate('/activate')} className="w-full">
                 Activate Account
               </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  const phoneNumber = "2348145932595";
+                  const message = encodeURIComponent(`Hello! I need help with my AcePrep account activation. My username is: ${profile?.username}`);
+                  window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+                }}
+                className="w-full border-green-600 text-green-600 hover:bg-green-50"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                WhatsApp: +234 814 593 2595
+              </Button>
               <Button variant="outline" onClick={handleSignOut} className="w-full">
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
@@ -83,10 +95,20 @@ const Index = () => {
               <p className="text-gray-600">Welcome back, {profile?.full_name}!</p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/profile')}
+              className="flex items-center gap-2"
+            >
+              <User className="w-4 h-4" />
+              Profile
+            </Button>
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         {/* Main Content */}
