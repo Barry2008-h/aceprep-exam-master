@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Users, Key, BookOpen, Target, Plus, Shield } from 'lucide-react';
+import { ArrowLeft, Users, Key, BookOpen, Target, Plus, Shield, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import QuestionManager from '@/components/admin/QuestionManager';
+import CourseManager from '@/components/admin/CourseManager';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -138,10 +140,11 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="keys">Activation Keys</TabsTrigger>
-            <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="courses">Courses</TabsTrigger>
+            <TabsTrigger value="questions">Questions</TabsTrigger>
             <TabsTrigger value="setup">Setup</TabsTrigger>
           </TabsList>
 
@@ -232,54 +235,54 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="content">
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="w-5 h-5" />
-                    Course Management
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">Manage courses, chapters, and practice questions</p>
-                  <Button onClick={() => navigate('/course-management')}>
-                    Manage Courses & Questions
-                  </Button>
-                </CardContent>
-              </Card>
+          <TabsContent value="courses">
+            <CourseManager />
+          </TabsContent>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="w-5 h-5" />
-                    Past Questions Management
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">Manage past questions by category and year</p>
-                  <Button onClick={() => navigate('/course-management')}>
-                    Manage Questions
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="questions">
+            <QuestionManager />
           </TabsContent>
 
           <TabsContent value="setup">
-            <Card>
-              <CardHeader>
-                <CardTitle>Initial Setup</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-gray-600">Sample data has been initialized with subjects and question categories</p>
-                  <Button onClick={initializeSampleData}>
-                    Refresh Sample Data
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Initial Setup</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <p className="text-gray-600">Sample data has been initialized with subjects and question categories</p>
+                    <Button onClick={initializeSampleData}>
+                      Refresh Sample Data
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5" />
+                    Contact Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="font-medium">Admin Email</Label>
+                      <p className="text-sm text-muted-foreground">georgeokebarry7@gmail.com</p>
+                    </div>
+                    <div>
+                      <Label className="font-medium">WhatsApp Support</Label>
+                      <p className="text-sm text-muted-foreground">+23481 4593 2595</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Users can contact via WhatsApp for activation support
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
