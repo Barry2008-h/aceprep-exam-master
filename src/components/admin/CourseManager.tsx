@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, BookOpen, Edit } from 'lucide-react';
+import { Plus, BookOpen, Edit, Brain } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const CourseManager = () => {
@@ -21,6 +21,11 @@ const CourseManager = () => {
     content: '',
     chapter_number: 1
   });
+
+  // AI Generation states
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiSubject, setAiSubject] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -79,6 +84,64 @@ const CourseManager = () => {
     }
   };
 
+  const generateCourseWithAI = async () => {
+    if (!aiPrompt.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a prompt for AI generation",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch(`https://mbzmjevvegalxehuscam.functions.supabase.co/functions/v1/generate-content`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'course',
+          prompt: aiPrompt,
+          subject: aiSubject
+        })
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate course');
+      }
+
+      const courseData = result.data;
+      
+      // Pre-fill the form with AI-generated content
+      setNewCourse({
+        ...newCourse,
+        title: courseData.title || 'AI Generated Course',
+        description: courseData.description || '',
+        content: courseData.content || ''
+      });
+
+      toast({
+        title: "Success",
+        description: "Course content generated with AI! Review and save when ready.",
+      });
+      
+      setAiPrompt('');
+      setIsAddingCourse(true); // Show the form so user can review
+    } catch (error) {
+      console.error('Error generating course:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate course with AI",
+        variant: "destructive",
+      });
+    }
+    setIsGenerating(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -89,10 +152,51 @@ const CourseManager = () => {
         </Button>
       </div>
 
+      {/* AI Course Generator - Always visible */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-purple-600" />
+            AI Course Generator
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="aiCoursePrompt">Course Topic/Prompt</Label>
+            <Textarea
+              id="aiCoursePrompt"
+              placeholder="e.g., Create a comprehensive course on calculus fundamentals for university students..."
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              rows={3}
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="aiCourseSubject">Subject Area</Label>
+            <Input
+              id="aiCourseSubject"
+              placeholder="e.g., Mathematics, English, Science"
+              value={aiSubject}
+              onChange={(e) => setAiSubject(e.target.value)}
+            />
+          </div>
+          
+          <Button 
+            onClick={generateCourseWithAI} 
+            disabled={isGenerating || !aiPrompt.trim()}
+            className="w-full"
+          >
+            {isGenerating ? 'Generating...' : 'Generate Course with AI'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Manual Course Form - Only when adding */}
       {isAddingCourse && (
         <Card>
           <CardHeader>
-            <CardTitle>Add New Course</CardTitle>
+            <CardTitle>Course Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
