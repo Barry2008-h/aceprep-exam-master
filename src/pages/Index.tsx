@@ -96,6 +96,16 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {profile?.username === 'adminbarry' && (
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/admin')}
+                className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50"
+              >
+                <User className="w-4 h-4" />
+                Admin Panel
+              </Button>
+            )}
             <Button 
               variant="outline" 
               onClick={() => navigate('/profile')}
