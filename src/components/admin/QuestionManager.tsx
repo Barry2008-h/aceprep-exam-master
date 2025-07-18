@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash, Brain } from 'lucide-react';
+import { Plus, Edit, Trash, Brain, Upload, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const QuestionManager = () => {
@@ -36,6 +36,9 @@ const QuestionManager = () => {
   const [aiDifficulty, setAiDifficulty] = useState('medium');
   const [aiCount, setAiCount] = useState(5);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [extractedText, setExtractedText] = useState('');
 
   useEffect(() => {
     loadData();
@@ -129,11 +132,62 @@ const QuestionManager = () => {
     }
   };
 
-  const generateQuestionsWithAI = async () => {
-    if (!aiPrompt.trim()) {
+  const processPdfFile = async () => {
+    if (!selectedFile) {
       toast({
         title: "Error",
-        description: "Please provide a prompt for AI generation",
+        description: "Please select a PDF file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessingPdf(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const { data, error } = await supabase.functions.invoke('process-pdf', {
+        body: formData
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setExtractedText(data.extractedText);
+        setAiPrompt(`Generate questions based on this content: ${data.extractedText.substring(0, 1000)}...`);
+        toast({
+          title: "Success",
+          description: "PDF processed successfully! Text extracted and ready for question generation.",
+        });
+      } else {
+        toast({
+          title: "Error", 
+          description: "Failed to process PDF",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error processing PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPdf(false);
+    }
+  };
+
+  const generateQuestionsWithAI = async () => {
+    const promptText = extractedText ? 
+      `Generate questions based on this content: ${extractedText}` : 
+      aiPrompt;
+
+    if (!promptText.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a prompt or upload a PDF for AI generation",
         variant: "destructive",
       });
       return;
@@ -148,7 +202,7 @@ const QuestionManager = () => {
         },
         body: JSON.stringify({
           type: 'questions',
-          prompt: aiPrompt,
+          prompt: promptText,
           subject: aiSubject,
           difficulty: aiDifficulty,
           count: aiCount
@@ -188,6 +242,8 @@ const QuestionManager = () => {
       
       loadData();
       setAiPrompt('');
+      setExtractedText('');
+      setSelectedFile(null);
     } catch (error) {
       console.error('Error generating questions:', error);
       toast({
@@ -219,8 +275,47 @@ const QuestionManager = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* PDF Upload Section */}
+            <div className="border-2 border-dashed border-muted rounded-lg p-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="pdf-upload">Upload PDF (Optional)</Label>
+                  <Input
+                    id="pdf-upload"
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    className="mt-1"
+                  />
+                </div>
+                <Button 
+                  onClick={processPdfFile}
+                  disabled={!selectedFile || isProcessingPdf}
+                  variant="outline"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {isProcessingPdf ? "Processing..." : "Process PDF"}
+                </Button>
+              </div>
+              {selectedFile && (
+                <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                  {selectedFile.name}
+                </div>
+              )}
+            </div>
+
+            {extractedText && (
+              <div className="bg-muted p-3 rounded-lg">
+                <Label className="text-sm font-medium">Extracted Text Preview:</Label>
+                <p className="text-sm text-muted-foreground mt-1 max-h-32 overflow-y-auto">
+                  {extractedText.substring(0, 500)}...
+                </p>
+              </div>
+            )}
+
             <div>
-              <Label htmlFor="aiPrompt">Prompt for AI</Label>
+              <Label htmlFor="aiPrompt">Manual Prompt (Optional if PDF uploaded)</Label>
               <Textarea
                 id="aiPrompt"
                 placeholder="e.g., Generate questions about Nigerian history focusing on independence..."
@@ -273,9 +368,10 @@ const QuestionManager = () => {
             
             <Button 
               onClick={generateQuestionsWithAI} 
-              disabled={isGenerating || !aiPrompt.trim()}
+              disabled={isGenerating || (!aiPrompt.trim() && !extractedText)}
               className="w-full"
             >
+              <Brain className="h-4 w-4 mr-2" />
               {isGenerating ? 'Generating...' : 'Generate Questions with AI'}
             </Button>
           </CardContent>
